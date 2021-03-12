@@ -28,26 +28,12 @@ class ViewController: UIViewController {
         
         btn.rx
             .tap
-            .flatMapLatest { [weak self] _ -> Observable<Int> in
+            .flatMap { [weak self] _ -> Observable<Int> in
                 guard let self = self else { return Observable.empty() }
                 if self.sw.isOn {
-                    return Observable<Int>.error(NSError(domain: "", code: 1, userInfo: [NSLocalizedDescriptionKey: "Error from network"])).do(onError: { [weak self] error in
-                        self?.show(error: error)
-                    })
-                        .catch { _ in return Observable.empty() }
+                    return Observable<Int>.error(NSError(domain: "", code: 1, userInfo: [NSLocalizedDescriptionKey: "Error from network"]))
                 } else {
-                    return Observable.just(Int.random(in: 0...999))
-                        .delay(.seconds(1), scheduler: MainScheduler.instance).do { [weak self] value in
-                            self?.activity.stopAnimating()
-                        } onError: { [weak self] _ in
-                            self?.activity.stopAnimating()
-                        } onCompleted: { [weak self] in
-                            self?.activity.stopAnimating()
-                        } onSubscribed: { [weak self] in
-                            self?.activity.startAnimating()
-                        } onDispose: { [weak self] in
-                            self?.activity.stopAnimating()
-                        }
+                    return self.fetchData()
                 }
             }
             .subscribe(onNext: { [weak self] number in
@@ -60,6 +46,21 @@ class ViewController: UIViewController {
                 self?.textView.text += "OnDisposed\n"
             })
             .disposed(by: disposeBag)
+    }
+    
+    private func fetchData() -> Observable<Int> {
+        Observable.just(Int.random(in: 0...999))
+            .delay(.seconds(1), scheduler: MainScheduler.instance).do { [weak self] value in
+                self?.activity.stopAnimating()
+            } onError: { [weak self] _ in
+                self?.activity.stopAnimating()
+            } onCompleted: { [weak self] in
+                self?.activity.stopAnimating()
+            } onSubscribed: { [weak self] in
+                self?.activity.startAnimating()
+            } onDispose: { [weak self] in
+                self?.activity.stopAnimating()
+            }
     }
     
     private func show(error: Error) {
